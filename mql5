@@ -1,0 +1,98 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                              Supertrend Indicator Scanner                                             |
+//|                                                      forexroboteasy.com                                                      |
+//|                                                          Forex Robot Easy Team                                                          |
+//+------------------------------------------------------------------+
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <Indicators\Trend\SuperTrend.mqh>
+
+// Define constants
+#define SYMBOLS_ARRAY_SIZE 10
+
+// Initialize variables
+string symbols[SYMBOLS_ARRAY_SIZE] = {'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD', 'USDCAD', 'USDCHF', 'EURGBP', 'EURJPY', 'EURCHF'};
+int selectedSymbols = 0;
+
+// Create an instance of the SuperTrend indicator
+CSuperTrend superTrend;
+
+// Create an instance of the Trade class for real-time trading
+CTrade trade;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Set indicator parameters
+   superTrend.SetParameters(12, 2.0);
+
+   // Set symbol parameters
+   trade.SetDeviationInPoints(30);
+   trade.SetProfitInPoints(50);
+   trade.SetStopLossInPoints(30);
+
+   // Subscribe to symbol quotes
+   for (int i = 0; i < SYMBOLS_ARRAY_SIZE; i++)
+   {
+      if (trade.SymbolSelect(symbols[i], true))
+         selectedSymbols++;
+   }
+
+   // Print the number of selected symbols
+   Print('Selected Symbols: ', selectedSymbols);
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Unsubscribe from symbol quotes
+   for (int i = 0; i < SYMBOLS_ARRAY_SIZE; i++)
+   {
+      if (trade.SymbolSelect(symbols[i], false))
+         selectedSymbols--;
+   }
+
+   // Print the number of selected symbols
+   Print('Selected Symbols: ', selectedSymbols);
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check if there are selected symbols
+   if (selectedSymbols > 0)
+   {
+      // Loop through all selected symbols
+      for (int i = 0; i < SYMBOLS_ARRAY_SIZE; i++)
+      {
+         // Check if the symbol is selected
+         if (trade.SymbolIsSelected(symbols[i]))
+         {
+            // Calculate the SuperTrend indicator value
+            double superTrendValue = superTrend.iCustom(symbols[i], PERIOD_CURRENT, 12, 2.0, 0, 0);
+
+            // Check for potential entry or exit points
+            if (superTrendValue > 0.0)
+            {
+               trade.Buy(symbols[i]);
+               Print('Buy ', symbols[i]);
+            }
+            else if (superTrendValue < 0.0)
+            {
+               trade.Sell(symbols[i]);
+               Print('Sell ', symbols[i]);
+            }
+         }
+      }
+   }
+}
